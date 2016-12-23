@@ -1,0 +1,110 @@
+dimension          2
+units              si
+atom_style         meso/multiphase
+newton				off
+boundary		   f f p
+
+variable		   xlow equal  -0.1
+variable		   xhig equal  0.1
+variable		   ylow equal  -0.1
+variable		   yhig equal  0.1
+variable		   zlow equal -1e-4
+variable		   zhig equal  1e-4
+
+variable		   shift equal  (${xhig}-${xlow})*0.205
+
+# create simulation box
+region             box block ${xlow} ${xhig} ${ylow} ${yhig} ${zlow} ${zhig} units box
+create_box         1 box
+
+
+variable		   lat equal 5e-4
+# we are using cubicspline kernel
+variable		   h equal ${lat}*1.5
+variable		   cutoff equal ${h}*2
+
+include			   ring1.csv
+include			   ring2.csv
+
+region			   ring1 block INF 0 INF INF INF INF units box
+region			   ring2 block 0 INF INF INF INF INF units box
+
+group			   ring1 region ring1
+group			   ring2 region ring2
+
+variable		   E equal 200e9
+variable		   nu equal 0.29
+variable		   G equal ${E}/(2.0*(1.0+${nu}))
+variable		   K equal 2.0*${G}*(1.0+${nu})/3.0/(1.0-2.0*${nu})
+variable		   c equal 5800
+variable		   sigma0 equal 350e6
+variable		   B equal 275e6
+variable		   C equal 0.022
+variable		   epsilonDot0 equal 1
+variable		   Tref equal 298
+variable		   Tmelt equal 1811
+variable		   n equal 0.36
+variable		   m equal 1
+variable		   rho0 equal 7890
+variable		   mass1 equal ${rho0}*${lat}*${lat}
+variable		   mass2 equal ${rho0}*${lat}*${lat}
+
+variable		   u equal ${c}*0.05
+velocity		   ring1 set ${u} 0 0 units box
+velocity		   ring2 set -${u} 0 0 units box
+
+set				   type 1 meso_cv 1
+set				   type 1 meso_e 0 # 1.26e6
+set				   type 1 meso_viscosity 0 
+set				   type 1 mass ${mass1}
+set                group all meso_rho ${rho0}
+
+pair_style         hybrid sph/solidMechanics/LowVel # /mg = Mie-Gruneisen #/Murnaghan p = c0^2(rho - rho0)
+pair_coeff         1 1 sph/solidMechanics/LowVel 1 1 ${cutoff} ${h} ${G} ${K} ${c} ${sigma0} ${B} ${C} ${epsilonDot0} ${Tref} ${Tmelt} ${n} ${m} yes 0.3 ${lat} 0.5
+
+fix                gfix all gravity 0 vector 0 -1 0
+
+compute            rho_peratom all meso_rho/atom
+compute            e_peratom all meso_e/atom
+compute            ke_peratom all ke/atom
+compute            esph all reduce sum c_e_peratom
+compute            ke all ke
+variable           etot equal c_ke+c_esph+f_gfix
+
+# do full time integration for shear driver and fluid, but keep walls stationary
+#fix                integrate_fix_full all meso/PEC/solidMech
+fix                integrate_fix_full all meso/PEC/solidMech/lowVel
+
+compute         1 all sph/stress/atom
+compute         12 all sph/strain/atom
+compute         13 all sph/artStress/atom
+variable        sigmaXX atom c_1[1]
+variable        sigmaXY atom c_1[2]
+variable        sigmaYX atom c_1[4]
+variable        sigmaYY atom c_1[5]
+
+variable        epsilonXX atom c_12[1]
+variable        epsilonXY atom c_12[2]
+variable        epsilonYX atom c_12[4]
+variable        epsilonYY atom c_12[5]
+
+variable        artStressXX atom c_13[1]
+variable        artStressXY atom c_13[2]
+variable        artStressYX atom c_13[4]
+variable        artStressYY atom c_13[5]
+
+compute         2 all meso_e/atom
+
+dump               dump_id all custom 500 dump.lammpstrj type id x y z vx vy vz fx fy fz p rho v_sigmaXX v_sigmaXY v_sigmaYX v_sigmaYY v_epsilonXX v_epsilonXY v_epsilonYX v_epsilonYY v_artStressXX v_artStressXY v_artStressYX v_artStressYY
+dump_modify        dump_id first yes
+thermo             100
+thermo_style       custom step c_esph v_etot c_ke
+thermo_modify      norm no
+
+#neighbor           ${lat} bin
+neighbor           5e-6 bin
+comm_modify        vel yes
+neigh_modify       delay 0 every 1 #check no binsize 0  once no
+thermo_modify	   lost ignore norm no
+timestep           1.0e-8
+run                100000

@@ -1,0 +1,109 @@
+dimension          2
+units              si
+atom_style         meso/multiphase
+
+
+variable		   xlow equal  0.0
+variable		   xhig equal  0.2
+variable		   ylow equal  0.0
+variable		   yhig equal  0.2
+variable		   zlow equal -1e-4
+variable		   zhig equal  1e-4
+
+variable		   shift equal  (${xhig}-${xlow})*0.2
+
+# create simulation box
+region             box block ${xlow} ${xhig} ${ylow} ${yhig} ${zlow} ${zhig} units box
+create_box         1 box
+
+variable		   sx1 equal 0.5*(${xlow}+${xhig})-${shift}
+variable		   sy1 equal 0.5*(${ylow}+${yhig})
+variable		   sz1 equal 0.5*(${zlow}+${zhig})
+variable		   radius1o equal (${xhig}-${xlow})*0.2
+variable		   radius1i equal (${xhig}-${xlow})*0.15
+
+variable		   sx2 equal 0.5*(${xlow}+${xhig})+${shift}
+variable		   sy2 equal 0.5*(${ylow}+${yhig})
+variable		   sz2 equal 0.5*(${zlow}+${zhig})
+variable		   radius2o equal (${xhig}-${xlow})*0.2
+variable		   radius2i equal (${xhig}-${xlow})*0.15
+
+variable		   lat equal 5e-4
+variable		   h equal ${lat}*1.5
+
+# create fluid particles
+region             ring1o cylinder z ${sx1} ${sy1} ${radius1o} 0 ${lat} units box side in
+region             ring1i cylinder z ${sx1} ${sy1} ${radius1i} 0 ${lat} units box side out
+region			   ring1 intersect 2 ring1o ring1i
+
+region             ring2o cylinder z ${sx2} ${sy2} ${radius2o} 0 ${lat} units box side in
+region             ring2i cylinder z ${sx2} ${sy2} ${radius2i} 0 ${lat} units box side out
+region			   ring2 intersect 2 ring2o ring2i
+
+lattice            sq ${lat} 
+create_atoms       1 region ring1
+group			   ring1 region ring1
+
+create_atoms       1 region ring2
+group			   ring2 region ring2
+
+variable		   E equal 1e7
+variable		   nu equal 0.3975
+variable		   G equal ${E}/(2.0*(1.0+${nu}))
+variable		   K equal 2.0*${G}*(1.0+${nu})/3.0/(1.0-2.0*${nu})
+variable		   rho0 equal 1
+variable		   c0 equal sqrt(${K}/${rho0})
+variable		   mass1 equal ${rho0}*${lat}*${lat}
+variable		   mass2 equal ${rho0}*${lat}*${lat}
+
+variable		   u equal ${c0}*0.059
+velocity		   ring1 set ${u} 0 0 units box
+velocity		   ring2 set -${u} 0 0 units box
+
+set				   type 1 meso_cv 4200
+set				   type 1 meso_e 0 # 1.26e6
+set				   type 1 meso_viscosity 0 
+set				   type 1 mass ${mass1}
+set                group all meso_rho ${rho0}
+
+
+pair_style         hybrid sph/solidMechanics/mg # /mg = Mie-Gruneisen #/Murnaghan p = c0^2(rho - rho0)
+pair_coeff         1 1 sph/solidMechanics/mg 1 1 ${h} ${G} 1.81 ${c0} 1.80  ${rho0} ${E} yes 0.3 ${lat}
+
+fix                gfix all gravity 0 vector 0 1 0
+
+compute            rho_peratom all meso_rho/atom
+compute            e_peratom all meso_e/atom
+compute            ke_peratom all ke/atom
+compute            esph all reduce sum c_e_peratom
+compute            ke all ke
+variable           etot equal c_ke+c_esph+f_gfix
+
+# do full time integration for shear driver and fluid, but keep walls stationary
+fix                integrate_fix_full all meso/solidMech
+
+compute         1 all sph/stress/atom
+variable        sigmaXX atom c_1[1]
+variable        sigmaXY atom c_1[2]
+variable        sigmaXZ atom c_1[3]
+variable        sigmaYX atom c_1[4]
+variable        sigmaYY atom c_1[5]
+variable        sigmaYZ atom c_1[6]
+variable        sigmaZX atom c_1[7]
+variable        sigmaZY atom c_1[8]
+variable        sigmaZZ atom c_1[9]
+compute         2 all meso_e/atom
+
+dump               dump_id all custom 500 dump.lammpstrj id type mass x y z vx vy vz fx fy fz p rho c_e_peratom v_sigmaXX v_sigmaXY v_sigmaXZ  v_sigmaYX v_sigmaYY v_sigmaYZ  v_sigmaZX v_sigmaZY v_sigmaZZ
+dump_modify        dump_id first yes
+thermo             100
+thermo_style       custom step c_esph v_etot c_ke
+thermo_modify      norm no
+
+neighbor           ${lat} bin
+#neighbor           0 bin
+comm_modify        vel yes
+neigh_modify       delay 0 every 1
+thermo_modify	   lost ignore norm no
+timestep           1.0e-8
+run                5000
