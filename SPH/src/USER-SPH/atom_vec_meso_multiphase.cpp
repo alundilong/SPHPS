@@ -29,7 +29,7 @@ using namespace LAMMPS_NS;
 AtomVecMesoMultiPhase::AtomVecMesoMultiPhase(LAMMPS *lmp) :
 	AtomVec(lmp) {
 	molecular = 0;
-	mass_type = 1;
+	mass_type = 0; // we use real mass!
 	forceclearflag = 1;
 
 	comm_x_only = 0; // we communicate not only x forward but also vest ...
