@@ -65,8 +65,8 @@ JPG_INC =
 JPG_PATH = 	
 JPG_LIB =	
 
-GSL_INC = -I/usr/local/include
-GSL_PATH = -L/usr/local/lib
+GSL_INC = -I/usr/include
+GSL_PATH = -L/usr/lib
 GSL_LIB = -lgsl -lgslcblas
 
 # ---------------------------------------------------------------------
