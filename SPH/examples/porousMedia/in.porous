@@ -2,7 +2,6 @@ dimension          2
 units              si
 atom_style         meso/multiphase
 
-
 variable		   xlow equal  0.0
 variable		   xhig equal  0.2
 variable		   ylow equal  0.0
@@ -30,6 +29,7 @@ variable		   radius2i equal (${xhig}-${xlow})*0.15
 
 variable		   lat equal 5e-4
 variable		   h equal ${lat}*1.5
+variable		   cutoff equal ${h}*2
 
 # create fluid particles
 region             ring1o cylinder z ${sx1} ${sy1} ${radius1o} 0 ${lat} units box side in
@@ -68,7 +68,7 @@ set                group all meso_rho ${rho0}
 
 
 pair_style         hybrid sph/solidMechanics/mg # /mg = Mie-Gruneisen #/Murnaghan p = c0^2(rho - rho0)
-pair_coeff         1 1 sph/solidMechanics/mg 1 1 ${h} ${G} 1.81 ${c0} 1.80  ${rho0} ${E} yes 0.3 ${lat}
+pair_coeff         1 1 sph/solidMechanics/mg 1 1 ${h} ${cutoff} ${G} 1.81 ${c0} 1.80 ${rho0} ${E} yes 0.3 ${lat} ${lat}
 
 fix                gfix all gravity 0 vector 0 1 0
 
