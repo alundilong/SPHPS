@@ -93,7 +93,7 @@ void PairSPHColorGradient::compute(int eflag, int vflag) {
 
   if (first) {
     for (i = 1; i <= atom->ntypes; i++) {
-      for (j = 1; i <= atom->ntypes; i++) {
+      for (j = 1; j <= atom->ntypes; j++) {
         if (cutsq[i][j] > 0.0) {
           if (!setflag[i][i] || !setflag[j][j]) {
             if (comm->me == 0) {
