@@ -31,6 +31,7 @@
 #include "math_extra_pysph.h"
 
 using namespace LAMMPS_NS;
+
 #define det3By3(A) \
 	A[0][0]*(A[1][1]*A[2][2] - A[1][2]*A[2][1]) \
    -A[0][1]*(A[1][0]*A[2][2] - A[1][2]*A[2][0]) \
@@ -412,18 +413,19 @@ void PairSPHSolidMechanicsMG::coeff(int narg, char **arg) {
   force->bounds(arg[0], atom->ntypes, ilo, ihi);
   force->bounds(arg[1], atom->ntypes, jlo, jhi);
 
-  double viscosity_one = force->numeric(FLERR, arg[2]);
-  double beta_one = force->numeric(FLERR, arg[3]);
-  double cut_one = force->numeric(FLERR, arg[4]);
-  h_ = force->numeric(FLERR, arg[4+1]);
+  double viscosity_one = force->numeric(FLERR, arg[2]); printf(" vis %d %s\n", narg,arg[2]);
+  double beta_one = force->numeric(FLERR, arg[3]); printf("beta %d %s\n", narg,arg[3]);
+  double cut_one = force->numeric(FLERR, arg[4]); printf("cut %d %s\n", narg,arg[4]);
+  h_ = force->numeric(FLERR, arg[4+1]); printf("h %d %s\n", narg,arg[5]);
 
-  G_ = force->numeric(FLERR, arg[5+1]);
-  Gamma_ = force->numeric(FLERR, arg[6+1]);
-  c_ = force->numeric(FLERR, arg[7+1]);
+  G_ = force->numeric(FLERR, arg[5+1]); printf("G %d %s\n", narg,arg[6]);
+  Gamma_ = force->numeric(FLERR, arg[6+1]); printf("Gamma %d %s\n", narg,arg[7]);
+  c_ = force->numeric(FLERR, arg[7+1]); printf("Sound %d %s\n", narg,arg[8]);
   Cs_ = c_;
-  S_ = force->numeric(FLERR, arg[8+1]);
-  rho0_ = force->numeric(FLERR, arg[9+1]);
-  Y0_ = force->numeric(FLERR, arg[10+1]);
+  S_ = force->numeric(FLERR, arg[8+1]); printf("S %d %s\n", narg,arg[9]);
+  rho0_ = force->numeric(FLERR, arg[9+1]); printf("rho0 %d %s\n", narg,arg[10]);
+
+  Y0_ = force->numeric(FLERR, arg[10+1]); printf("Y0 %d %s\n", narg,arg[11]);
 
   if(strcmp(arg[11+1],"yes") == 0) 
   {
