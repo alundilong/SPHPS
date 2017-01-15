@@ -52,7 +52,7 @@ PairSPHSolidMechanics::~PairSPHSolidMechanics() {
 /* ---------------------------------------------------------------------- */
 
 void PairSPHSolidMechanics::compute(int eflag, int vflag) {
-	
+
   int i, j, ii, jj, inum, jnum, itype, jtype;
   double xtmp, ytmp, ztmp, delx, dely, delz, fpair;
 

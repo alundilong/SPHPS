@@ -41,6 +41,9 @@
 	tauzy = tau_[i][2][1];
 	tauzz = tau_[i][2][2];
 
+      // bug rhoi rhoj = 0 !!!!!
+    rho[i] = 1.0;
+
     for (jj = 0; jj < jnum; jj++) {
       j = jlist[jj];
       j &= NEIGHMASK;
@@ -51,6 +54,9 @@
       rsq = delx * delx + dely * dely + delz * delz;
       jtype = type[j];
       jmass = rmass[j];
+      // bug rhoi rhoj = 0 !!!!!
+        // printf("rhoi = %f rhoj = %f\n", rho[i], rhoj);
+      rho[j] = 1.0;
 	  rhoj = rho[j];
 
 	  if (rsq < cutsq[itype][jtype]) {
@@ -177,6 +183,7 @@
 	 * MIe-Gruneisen Equation
 	 * Liu's Book, Page 297
 	 */ 
+
 	double eta = rho[i]/rho0_ - 1.0;
 	a0_ = rho0_*Cs_*Cs_;
 	b0_ = a0_*(1. + 2.*(S_ - 1.));
@@ -238,6 +245,14 @@
 
 	  if(V[2] > 0) rd[2] = -eps_*V[2]*rhoi2Inv;
 	  else rd[2] = 0;
+
+      //printf("I = %d\n", i);
+      //printf("r01 = %f r01 = %f r02 = %f; r10 = %f r11 = %f r12 = %f; r20 = %f r21 = %f r22 = %f;\n", \
+                //R[0][0], R[0][1],R[0][2],\
+                //R[1][0], R[1][1],R[1][2],\
+                //R[2][0], R[2][1],R[2][2]);
+      //printf("rd0 = %f rd1 = %f rd2 = %f\n", rd[0], rd[1], rd[2]);
+
 
 	  MathExtraPysph::transform_diag_inv_3D(rd, R, Rab);
 	  
