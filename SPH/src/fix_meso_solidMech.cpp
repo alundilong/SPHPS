@@ -152,6 +152,8 @@ void FixMesoSolidMech::initial_integrate(int vflag) {
       xOld_[i][1] = x[i][1];
       xOld_[i][2] = x[i][2];
 
+      //printf("i = %d : x=%f y=%f z=%f\n", i, x[i][0], x[i][1], x[i][2]);
+
       vOld_[i][0] = v[i][0];
       vOld_[i][1] = v[i][1];
       vOld_[i][2] = v[i][2];
