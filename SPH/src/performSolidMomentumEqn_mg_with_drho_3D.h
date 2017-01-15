@@ -10,8 +10,11 @@
       jtype = type[j];
       jmass = rmass[j];
 	  rhoj = rho[j];
+      // bug : rhoi, and rhoj are both 0!!!!
+      rhoi = rhoj = 1.0;
+      // printf("itype = %d, jtype = %d, imass = %f, jmass = %f, rhoi = %f, rhoj = %f\n", itype, jtype, imass, jmass, rhoi, rhoj);
 
-	  if (rsq < cutsq[itype][jtype]) {
+	  if (rsq < cutsq[itype][jtype] && 1) {
 		//h = h_;  //cut[itype][jtype];
 		h = 0.5*cut[itype][jtype];
         ih = 1. / h;
@@ -23,6 +26,8 @@
 		wdeltap = SPH_KERNEL_NS::sph_kernel_cubicspline(deltap_/h, h, ih);
 		wf = SPH_KERNEL_NS::sph_kernel_cubicspline(s, h, ih);
 		wfd = SPH_KERNEL_NS::sph_kernel_cubicspline_der(s, h, ih)*rInv;
+
+        //printf("nstep = %d : wdeltap = %f, wf = %f, wfd = %f, r = %f\n", update->ntimestep, wdeltap, wf, wfd, r);
 
         // dot product of velocity delta and distance vector
         delVdotDelR = delx * (vxtmp - v[j][0]) + dely * (vytmp - v[j][1])
@@ -55,6 +60,7 @@
 							  + (sigma_[i][2][1]/rhoi/rhoi + sigma_[j][2][1]/rhoj/rhoj)*dely \
 							  + (sigma_[i][2][2]/rhoi/rhoi + sigma_[j][2][2]/rhoj/rhoj)*delz);
 
+        //printf("---- 1 : fix = %f fiy = %f fiz = %f\n", fix, fiy, fiz);
 		/*
 		 * XSPH correction 
 		 * Gray, J. P., Monaghan, JJ. Swift, R. P. SPH Elastic Dynamics, Compute Methods
@@ -74,6 +80,9 @@
 		fab = wf/wdeltap;
 		fab = pow(fab, 4);
 		if(wdeltap < 0) fab = 0;
+        //printf("s01 = %f s01 = %f s02 = %f; s10 = %f s11 = %f s12 = %f; s20 = %f s21 = %f s22 = %f;\n", artStress_[i][0][0], artStress_[i][0][1],artStress_[i][0][2],\
+                //artStress_[i][1][0], artStress_[i][1][1],artStress_[i][1][2],\
+                //artStress_[i][2][0], artStress_[i][2][1],artStress_[i][2][2]);
 
 		fix += imass*jmass*wfd*fab*((artStress_[i][0][0] + artStress_[j][0][0])*delx \
 							  + (artStress_[i][0][1] + artStress_[j][0][1])*dely \
@@ -85,6 +94,7 @@
 							  + (artStress_[i][2][1] + artStress_[j][2][1])*dely \
 							  + (artStress_[i][2][2] + artStress_[j][2][2])*delz);
 
+        //printf("---- 2 : fix = %f fiy = %f fiz = %f\n", fix, fiy, fiz);
 		/* look at the Idealgas code
 		 *
          * fvisc = -viscosity[itype][jtype] * (ci + cj) * mu / (rho[i] + rho[j]);
@@ -98,6 +108,7 @@
 		fix -= imass*jmass*wfd*PIJ*delx;
 		fiy -= imass*jmass*wfd*PIJ*dely;
 		fiz -= imass*jmass*wfd*PIJ*delz;
+        //printf("---- 3 : fix = %f fiy = %f fiz = %f\n", fix, fiy, fiz);
 
 		double eshear = 0.5*imass*jmass*(p_[i]/rhoi/rhoi + p_[j]/rhoj/rhoj + PIJ)*wfd*(delVdotDelR);
 
