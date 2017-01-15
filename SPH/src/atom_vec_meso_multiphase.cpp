@@ -29,7 +29,7 @@ using namespace LAMMPS_NS;
 AtomVecMesoMultiPhase::AtomVecMesoMultiPhase(LAMMPS *lmp) :
 	AtomVec(lmp) {
 	molecular = 0;
-	mass_type = 0; // we use real mass!
+	mass_type = 1; // we use real mass and mass type
 	forceclearflag = 1;
 
 	comm_x_only = 0; // we communicate not only x forward but also vest ...
@@ -3578,18 +3578,25 @@ void AtomVecMesoMultiPhase::create_atom(int itype, double *coord) {
 	x[nlocal][1] = coord[1];
 	x[nlocal][2] = coord[2];
 
+    xOld_[nlocal][0] = coord[0];
+    xOld_[nlocal][1] = coord[1];
+    xOld_[nlocal][2] = coord[2];
+    vOld_[nlocal][0] = 0;
+    vOld_[nlocal][1] = 0;
+    vOld_[nlocal][2] = 0;
+
 	mask[nlocal] = 1;
 	image[nlocal] = (512 << 20) | (512 << 10) | 512;
 	v[nlocal][0] = 0.0;
 	v[nlocal][1] = 0.0;
 	v[nlocal][2] = 0.0;
 
-	rho[nlocal] = 0.0;
+	rho[nlocal] = 1.0;
 
 	colorgradient[nlocal][0] = 0.0;
 	colorgradient[nlocal][1] = 0.0;
 	colorgradient[nlocal][2] = 0.0;
-	rmass[nlocal] = 0.0;
+	rmass[nlocal] = atom->mass[itype];
 	e[nlocal] = 0.0;
 	cv[nlocal] = 1.0;
 	phi[nlocal] = 0.0;
